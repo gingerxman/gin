@@ -7,7 +7,11 @@ GOFLAGS ?= $(GOFLAGS:)
 all: build
 
 build:
-	go build $(GOFLAGS)
+	go build $(GOFLAGS) gin.go
 
 clean:
-	go clean $(GOFLAGS) -i
+	go clean $(GOFLAGS) -i gin.go
+
+install:
+	rm `which gin`
+	go install ${GOFLAGS} gin.go

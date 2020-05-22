@@ -18,4 +18,9 @@ vendor/
 dumper
 gin
 main
+_generate
+_gofile_template
+app.json
+service.json
+dev.sh
 

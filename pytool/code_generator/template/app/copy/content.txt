@@ -1,0 +1,129 @@
+#copy to {{service_name}}/routers/router.go
+import (
+	"github.com/gingerxman/eel"
+	"{{service_name}}/rest/{{package}}"
+)
+
+{% if app_resource %}
+eel.RegisterResource(&{{app_name}}.App{})
+eel.RegisterResource(&{{app_name}}.DisabledApp{})
+eel.RegisterResource(&{{app_name}}.FinishedApp{})
+eel.RegisterResource(&{{app_name}}.AppStatus{})
+eel.RegisterResource(&{{app_name}}.CorpApps{})
+eel.RegisterResource(&{{app_name}}.Product{})
+eel.RegisterResource(&{{app_name}}.ProductsPrice{})
+eel.RegisterResource(&{{app_name}}.ProductDisplayIndex{})
+eel.RegisterResource(&{{app_name}}.DisabledProduct{})
+eel.RegisterResource(&{{app_name}}.Products{})
+eel.RegisterResource(&{{app_name}}.CorpProducts{})
+eel.RegisterResource(&{{app_name}}.Activity{})
+eel.RegisterResource(&{{app_name}}.ActivityCreateStrategy{})
+eel.RegisterResource(&{{app_name}}.CashedActivity{})
+eel.RegisterResource(&{{app_name}}.ActivityScore{})
+eel.RegisterResource(&{{app_name}}.ActivityRankings{})
+eel.RegisterResource(&{{app_name}}.ActivityRanking{})
+eel.RegisterResource(&{{app_name}}.ActivityStatistics{})
+eel.RegisterResource(&{{app_name}}.PayedActivity{})
+eel.RegisterResource(&{{app_name}}.Activities{})
+eel.RegisterResource(&{{app_name}}.UserActivities{})
+{%- endif %}
+{% for resource in resources -%}
+eel.RegisterResource(&{{app_name}}.{{resource.class_name}}{})
+eel.RegisterResource(&{{app_name}}.{{resource.class_name}}DisplayIndex{})
+eel.RegisterResource(&{{app_name}}.Disabled{{resource.class_name}}{})
+eel.RegisterResource(&{{app_name}}.{{resource.plural_class_name}}{})
+eel.RegisterResource(&{{app_name}}.Corp{{resource.plural_class_name}}{})
+{% endfor %}
+
+
+
+
+
+#copy to {{service_name}}/models/init.go
+import (
+	_ "{{service_name}}/models/{{app_name}}"
+)
+
+
+
+
+#copy to {{service_name}}/features/clean/clean_all.py
+{% for resource in resources -%}
+o.Exec("DELETE FROM {{table_prefix}}_{{resource.name}};")
+{%- for refer in resource.refers -%}
+{%- if refer.type == 'n-n' and refer.should_generate_n2n_table %}
+o.Exec("DELETE FROM {{table_prefix}}_{{resource.name}}_has_{{refer.resource.name}};")
+{%- endif %}
+{%- endfor %}
+{% endfor -%}
+{% if app_resource -%}
+{%- for refer in app_resource.refers %}
+{%- if refer.enable_fill_objects %}
+o.Exec("DELETE FROM {{table_prefix}}_app_has_{{refer.resource.name}};")
+{%- endif -%}
+{%- endfor %}
+o.Exec("DELETE FROM {{table_prefix}}_product;")
+o.Exec("DELETE FROM {{table_prefix}}_activity_detail;")
+o.Exec("DELETE FROM {{table_prefix}}_activity;")
+o.Exec("DELETE FROM {{table_prefix}}_app_detail;")
+o.Exec("DELETE FROM {{table_prefix}}_app;")
+{% endif %}
+
+
+
+
+#drop table sqls
+{% for resource in resources -%}
+DROP TABLE IF EXISTS {{table_prefix}}_{{resource.name}};
+{% endfor -%}
+{%- for resource in resources -%}
+{%- for refer in resource.refers -%}
+{%- if refer.type == 'n-n' and refer.should_generate_n2n_table -%}
+DROP TABLE IF EXISTS {{table_prefix}}_{{resource.name}}_has_{{refer.resource.name}};
+{%- endif %}
+{%- endfor %}
+{% endfor -%}
+{% if app_resource -%}
+{%- for refer in app_resource.refers %}
+{%- if refer.enable_fill_objects %}
+DROP TABLE IF EXISTS {{table_prefix}}_app_has_{{refer.resource.name}};
+{%- endif -%}
+{%- endfor %}
+DROP TABLE IF EXISTS {{table_prefix}}_product;
+DROP TABLE IF EXISTS {{table_prefix}}_activity_detail;
+DROP TABLE IF EXISTS {{table_prefix}}_activity;
+DROP TABLE IF EXISTS {{table_prefix}}_app_detail;
+DROP TABLE IF EXISTS {{table_prefix}}_app;
+{% endif %}
+
+
+
+
+
+# copy to reactman/app/nav.py
+{
+	'name': 'app-{{app_name}}',
+	'displayName': '{{app_cn_name}}管理',
+	'href': '/app/{{app_name}}/apps/',
+	'permission': '',
+	'navs': [{% if resource_app %}{
+		'name': 'app-{{app_name}}-apps',
+		'displayName': '{{app_cn_name}}管理',
+		'href': '/app/{{app_name}}/apps/',
+	},{
+		'name': 'app-{{app_name}}-activities',
+		'displayName': '参与列表',
+		'href': '/app/{{app_name}}/activities/',
+	},{
+		'name': 'app-{{app_name}}-products',
+		'displayName': '{{product_cn_name}}管理',
+		'href': '/app/{{app_name}}/products/',
+	},{% endif -%}
+	{%- for resource in resources -%}
+	{
+		'name': 'app-{{app_name}}-{{resource.name}}',
+		'displayName': '{{resource.cn_name}}管理',
+		'href': '/app/{{app_name}}/{{resource.plural_name}}/',
+	}{{ "," if not loop.last }}{{""-}}
+	{% endfor %}]
+}

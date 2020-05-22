@@ -34,6 +34,7 @@ var (
 		`(\w+).go~`,
 		`(\w+).tmp`,
 		`commentsRouter_controllers.go`,
+		`\/features\/`,
 	}
 )
 var started = make(chan bool)
@@ -42,7 +43,6 @@ var exit = make(chan bool)
 var buildSource = "main.go"
 
 func readAppDirectories(directory string, paths *[]string) {
-	log.Printf("read app directory %s ...\n", directory)
 	fileInfos, err := ioutil.ReadDir(directory)
 	if err != nil {
 		return
@@ -187,7 +187,7 @@ func autoBuild(file string) bool {
 		appName += ".exe"
 	}
 	
-	args := []string{"build", "-v"}
+	args := []string{"build", "-v", "-mod=vendor"}
 	args = append(args, "-o", appName)
 	args = append(args, file)
 	
@@ -291,7 +291,6 @@ var runCmd = &cobra.Command{
 		
 		//编译并启动
 		service := path.Base(curDir)
-		service = "dumper"
 		appname = service
 		autoBuild(buildSource)
 		for {
