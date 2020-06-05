@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -290,6 +291,9 @@ var runCmd = &cobra.Command{
 		newWatcher(paths, buildSource)
 		
 		//编译并启动
+		if runtime.GOOS == "windows"{
+			curDir = filepath.ToSlash(curDir)
+		}
 		service := path.Base(curDir)
 		appname = service
 		autoBuild(buildSource)
