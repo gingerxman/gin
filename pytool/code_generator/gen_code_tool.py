@@ -214,6 +214,10 @@ class Field(object):
 		self.snake_name = self.get_snake_name(self.name)
 		self.var_name = get_var_name(self.name)
 		self.is_name_field = field_info.get('is_name_field', False)
+		self.valid_when_update = field_info.get('valid_when_update', True)
+		self.valid_when_create = field_info.get('valid_when_create', True)
+		self.is_data_owner_fk = field_info.get('is_data_owner_fk', False)
+		self.default_value = field_info.get('default', None)
 
 		try:
 			filed_type = field_info['type']
@@ -224,10 +228,13 @@ class Field(object):
 		self.type = type_infos["go_type"]
 		self.json_type = type_infos["json_type"]
 		self.rest_type = type_infos["rest_type"]
-		self.orm_annotation = type_infos['orm_annatation']
 		self.json_must_func = type_infos['json_must_func']
 		self._reactman_control = field_info.get('reactman_control', 'input')
 		self.reactman_label = field_info.get('reactman_label', self.name)
+		if 'db_type' in field_info:
+			self.orm_annotation = '`gorm:"type:%s"`' % field_info['db_type']
+		else:
+			self.orm_annotation = field_info.get('orm_annatation', type_infos['orm_annatation'])
 		self.meta_data = field_info
 
 	def __repr__(self):
@@ -240,6 +247,7 @@ class Resource(object):
 		self.plural_name = get_plural_name(self.name)
 		self.cn_name = data['cn_name']
 		self.enable_display_index = data.get('enable_display_index', False)
+		self.data_owner = data.get('data_owner', '') # 数据的所有者: corp, user, platform
 
 		class_name = snake2camel(self.name)
 		self.class_name = class_name
@@ -255,8 +263,74 @@ class Resource(object):
 		for field_info in data['fields']:
 			self.fields.append(Field("resource", field_info))
 
+		#补充完整fields
+		if self.belong_to_user:
+			self.fields.insert(0, Field("resource", {
+				"name": "UserId",
+				"type": "int",
+				"is_data_owner_fk": True,
+				"valid_when_update": False,
+				"valid_when_create": False,
+				"orm_annatation": '`gorm:"index:userid_isdelete_isenable"`'
+			}))
+			self.fields.append(Field("resource", {
+				"name": "IsEnabled",
+				"type": "bool",
+				"default": 'true',
+				"valid_when_update": False,
+				"valid_when_create": False,
+				"orm_annatation": '`gorm:"index:userid_isdelete_isenable"`'
+			}))
+			self.fields.append(Field("resource", {
+				"name": "IsDeleted",
+				"type": "bool",
+				"default": 'false',
+				"valid_when_update": False,
+				"valid_when_create": False,
+				"orm_annatation": '`gorm:"index:userid_isdelete_isenable"`'
+			}))
+			self.fields[0].iface = {
+				"var_name": "user",
+				"type": "business.IUser"
+			}
+		if self.belong_to_corp:
+			self.fields.insert(0, Field("resource", {
+				"name": "CorpId",
+				"type": "int",
+				"is_data_owner_fk": True,
+				"valid_when_update": False,
+				"valid_when_create": False,
+				"orm_annatation": '`gorm:"index:corpid_isdelete_isenable"`'
+			}))
+			self.fields.append(Field("resource", {
+				"name": "IsEnabled",
+				"type": "bool",
+				"valid_when_update": False,
+				"valid_when_create": False,
+				"orm_annatation": '`gorm:"index:corpid_isdelete_isenable"`'
+			}))
+			self.fields.append(Field("resource", {
+				"name": "IsDeleted",
+				"type": "bool",
+				"valid_when_update": False,
+				"valid_when_create": False,
+				"orm_annatation": '`gorm:"index:corpid_isdelete_isenable"`'
+			}))
+			self.fields[0].iface = {
+				"var_name": "corp",
+				"type": "business.ICorp"
+			}
+
 		#解析refer
 		self.refers = data.get('refers')
+
+	@property
+	def belong_to_user(self):
+		return self.data_owner == 'user'
+
+	@property
+	def belong_to_corp(self):
+		return self.data_owner == 'corp'
 
 	@property
 	def has_name_field(self):
@@ -301,12 +375,18 @@ class Resource(object):
 			"plural_class_name": self.plural_class_name,
 			"capital_plural_class_name": self.capital_plural_class_name,
 			"fields": self.fields,
+			"updatable_fields": filter(lambda field: field.valid_when_update and (not field.is_data_owner_fk), self.fields),
+			"creatable_fields": filter(lambda field: field.valid_when_create and (not field.is_data_owner_fk), self.fields),
+			"non_creatable_fields": filter(lambda field: (not field.valid_when_create) and (not field.is_data_owner_fk), self.fields),
+			"data_owner_field": next( (field for field in self.fields if field.is_data_owner_fk), None),
 			"enable_display_index": self.enable_display_index,
 			"name_field": self.name_field,
 			'has_name_field': self.has_name_field,
 			'refers': self.refers,
 			'should_import_model': self.should_import_model,
-			'should_select_other_resource_in_reactman': self.should_select_other_resource_in_reactman
+			'should_select_other_resource_in_reactman': self.should_select_other_resource_in_reactman,
+			'belong_to_user': self.belong_to_user,
+			'belong_to_corp': self.belong_to_corp
 		}
 
 	def __repr__(self):
@@ -718,7 +798,7 @@ class Command(object):
 
 		app_info = AppInfo.parse()
 
-		# self.download_template_files()
+		#self.download_template_files()
 
 		app_info_dict = app_info.to_dict()
 		self.generate_file({
@@ -749,6 +829,7 @@ class Command(object):
 				"encode_product_service.go"] if not app_info.app_resource else None,
 			"context": app_info_dict
 		})
+		return
 		self.generate_file({
 			"file_type": "rest",
 			"file_suffixs": [".go",],

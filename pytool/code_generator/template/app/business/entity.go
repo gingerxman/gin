@@ -15,7 +15,6 @@ import (
 type {{class_name}} struct {
 	eel.EntityBase
 	Id int
-	CorpId int
 	{%- for field in fields %}
 	{{ field.name }} {{ field.type -}}
 	{% endfor %}
@@ -23,8 +22,6 @@ type {{class_name}} struct {
 	DisplayIndex int //显示时的排序
 	OriginalDisplayIndex int //置顶置底前的排序
 	{%- endif %}
-	IsEnabled bool
-	IsDeleted bool
 	CreatedAt time.Time
 
 	//foreign key
@@ -42,12 +39,8 @@ type {{class_name}} struct {
 
 //Update 更新对象
 func (this *{{class_name}}) Update(
-	{%- for field in fields %}
-	{% if field.type == "time.Time" -%}
-	{{ field.var_name }} string,{{""-}}
-	{%- else -%}
+	{%- for field in updatable_fields %}
 	{{ field.var_name }} {{ field.type -}},{{""-}}
-	{%- endif -%}
 	{% endfor %}
 
 	{%- for refer in refers %}
@@ -62,11 +55,10 @@ func (this *{{class_name}}) Update(
 	{%- endif %}
 	{%- endfor %}
 ) error {
-	var model m_{{package}}.{{class_name}}
 	o := eel.GetOrmFromContext(this.Ctx)
 
-	db := o.Model(&model).Where("id", this.Id).Update(gorm.Params{
-		{%- for field in fields %}
+	db := o.Model(&m_{{package}}.{{class_name}}).Where("id", this.Id).Update(gorm.Params{
+		{%- for field in updatable_fields %}
 		"{{ field.snake_name }}": {{ field.var_name }},{{""-}}
 		{% endfor %}
 
@@ -113,7 +105,6 @@ func (this *{{class_name}}) enable(isEnabled bool) {
 	
 	db := o.Model(&m_{{package}}.{{class_name}}{}).Where(eel.Map{
 		"id": this.Id,
-		"corp_id": this.CorpId,
 	}).Update(gorm.Params{
 		"is_enabled": isEnabled,
 	})
@@ -134,7 +125,9 @@ func (this *{{class_name}}) Disable() {
 func (this *{{class_name}}) Delete() error {
 	o := eel.GetOrmFromContext(this.Ctx)
 	
-	db := o.Model(&m_{{package}}.{{class_name}}{}).Where("id", this.Id).Update(gorm.Params{
+	db := o.Model(&m_{{package}}.{{class_name}}{}).Where(eel.Map{
+		"id", this.Id,
+	}).Update(gorm.Params{
 		"is_deleted": true,
 	})
 
@@ -168,14 +161,12 @@ func (this *{{class_name}}) UpdateDisplayIndex(action string) error {
 
 //工厂方法
 func New{{class_name}}(
-	ctx context.Context, 
-	corp business.ICorp,
-	{%- for field in fields %}
-	{% if field.type == "time.Time" -%}
-	{{ field.var_name }} string,{{""-}}
-	{%- else -%}
+	ctx context.Context,
+	{%- if data_owner_field %}
+	{{data_owner_field.iface.var_name}} {{data_owner_field.iface.type}},
+	{%- endif %}
+	{%- for field in creatable_fields %}
 	{{ field.var_name }} {{ field.type -}},{{""-}}
-	{%- endif -%}
 	{% endfor %}
 
 	{%- for refer in refers %}
@@ -194,15 +185,14 @@ func New{{class_name}}(
 
 	//保存数据
 	model := m_{{package}}.{{class_name}}{}
-	model.CorpId = corp.GetId()
-	model.IsEnabled = true
-	model.IsDeleted = false
-	{% for field in fields %}
-	{%- if field.type == "time.Time" -%}
-	model.{{ field.name }} = eel.ParseTime({{ field.var_name }})
-	{%- else -%}
+	{%- if data_owner_field %}
+	model.{{ data_owner_field.name }} = {{data_owner_field.iface.var_name}}.GetId()
+	{%- endif -%}
+	{% for field in creatable_fields %}
 	model.{{ field.name }} = {{ field.var_name -}}
-	{%- endif %}
+	{% endfor %}
+	{%- for field in non_creatable_fields %}
+	model.{{ field.name }} = {{ field.default_value -}}
 	{% endfor %}
 
 	{%- for refer in refers %}
@@ -252,7 +242,6 @@ func New{{class_name}}FromModel(ctx context.Context, model *m_{{package}}.{{clas
 	instance.Ctx = ctx
 	instance.Model = model
 	instance.Id = model.Id
-	instance.CorpId = model.CorpId
 	{%- if enable_display_index %}
 	instance.DisplayIndex = model.DisplayIndex
 	instance.OriginalDisplayIndex = model.OriginalDisplayIndex
@@ -266,8 +255,6 @@ func New{{class_name}}FromModel(ctx context.Context, model *m_{{package}}.{{clas
 	instance.{{refer.resource.class_name}}Id = model.{{refer.resource.class_name}}Id
 	{%- endif %}
 	{%- endfor %}
-	instance.IsEnabled = model.IsEnabled
-	instance.IsDeleted = model.IsDeleted
 	instance.CreatedAt = model.CreatedAt
 
 	return instance

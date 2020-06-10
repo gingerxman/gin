@@ -1,4 +1,7 @@
-package {{package}}
+package
+
+import "time"
+{{package}}
 
 import (
 	"time"
@@ -146,7 +149,6 @@ func (self *ActivityHas{{refer.resource.class_name}}) TableName() string {
 //{{resource.class_name}} Model
 type {{resource.class_name}} struct {
 	eel.Model
-	CorpId int `gorm:"index:corpid_isdelete_isenable"` //foreign key for corp
 	{%- for refer in resource.refers %}
 	{%- if refer.type == 'n-1' and refer.quantity == 'n' %}
 	{{ refer.resource.class_name }}Id int //foreign key {{refer.resource.name}}
@@ -159,17 +161,10 @@ type {{resource.class_name}} struct {
 	DisplayIndex int `gorm:"index"`//显示时的排序
 	OriginalDisplayIndex int //置顶置底前的原始排序
 	{%- endif %}
-	IsEnabled bool `gorm:"index:corpid_isdelete_isenable"`
-	IsDeleted bool `gorm:"index:corpid_isdelete_isenable"`
 }
 func (self *{{resource.class_name}}) TableName() string {
 	return "{{table_prefix}}_{{resource.name}}"
 }
-//func (this *{{resource.class_name}}) TableIndex() [][]string {
-//	return [][]string{
-//		[]string{"CorpId", "IsDeleted", "IsEnabled"},
-//	}
-//}
 
 {%- for refer in resource.refers %}
 {%- if refer.type == 'n-n' and refer.should_generate_n2n_table %}
