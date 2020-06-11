@@ -1,7 +1,4 @@
-package
-
-import "time"
-{{package}}
+package {{package}}
 
 import (
 	"time"

@@ -46,7 +46,10 @@ def get_var_name(name):
 	:param name:
 	:return:
 	"""
-	return name[0].lower() + name[1:]
+	if name == 'Type':
+		return 'dataType'
+	else:
+		return name[0].lower() + name[1:]
 
 class Field(object):
 	type2infos = {

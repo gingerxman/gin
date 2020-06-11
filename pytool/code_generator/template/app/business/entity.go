@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"errors"
 	"context"
-	"{{service_name}}/business"
 	m_{{package}} "{{service_name}}/models/{{package}}"
 	"time"
 
