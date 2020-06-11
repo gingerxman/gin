@@ -465,53 +465,132 @@ class AppInfo(object):
 					refer_resource_info['resource'] = name2resource[resource_name]
 					refer_resource_info['resource_name'] = resource_name
 
+					refer_type = refer_resource_info['type']
+					items = refer_type.split('-')
+					if len(items) != 2:
+						print '[ERROR] invalid refer_type `%s`' % refer_type
+						sys.exit(1)
+					self_quantity = items[0]
+					other_quantity = items[1]
+					refer_resource_info['quantity'] = other_quantity
+
+					if not 'present_when_create' in refer_resource_info:
+						refer_resource_info['present_when_create'] = False
+					if not 'present_when_update' in refer_resource_info:
+						refer_resource_info['present_when_update'] = False
+
+					enable_fill = refer_resource_info.get('enable_fill', False)
+					is_nto1 = (refer_resource_info['type'] == '1-n') or (refer_resource_info['type'] == 'n-1')
+					is_nton = (refer_resource_info['type'] == 'n-n')
+					refer_resource_info['enable_fill_nto1_1'] = enable_fill and is_nto1 and (other_quantity == '1')
+					refer_resource_info['enable_fill_nto1_n'] = enable_fill and is_nto1 and (other_quantity == 'n')
+					refer_resource_info['enable_fill_nton'] = enable_fill and is_nton
+					refer_resource_info['enable_fill_object'] = refer_resource_info['enable_fill_nto1_1']
+					refer_resource_info['enable_fill_objects'] = (refer_resource_info['enable_fill_nto1_n'] or refer_resource_info['enable_fill_nton'])
+
+					refer_resource_info['update_nto1_1'] = is_nto1 and (other_quantity == '1') and refer_resource_info['present_when_update']
+					refer_resource_info['update_nto1_n'] = is_nto1 and (other_quantity == 'n') and refer_resource_info['present_when_update']
+					refer_resource_info['update_nton'] = is_nton and refer_resource_info['present_when_update']
+
+					refer_resource_info['create_nto1_1'] = is_nto1 and (other_quantity == '1') and refer_resource_info['present_when_create']
+					refer_resource_info['create_nto1_n'] = is_nto1 and (other_quantity == 'n') and refer_resource_info['present_when_create']
+					refer_resource_info['create_nton'] = is_nton and refer_resource_info['present_when_create']
+
+					print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+					print resource.name, ' -> ', resource_name
+					for key in ['type', 'quantity', 'enable_fill_nto1_1', 'enable_fill_nto1_n', 'enable_fill_nton', 'update_nto1_1', 'update_nto1_n', 'update_nton', 'create_nto1_1', 'create_nto1_n', 'create_nton']:
+						print '%s: %s' % (key, refer_resource_info.get(key))
+					print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+
+
 					if refer_resource_info['type'] == 'n-n':
 						refer_resource_info['should_generate_n2n_table'] = True
 					else:
-						refer_resource_info['should_generate_n2n_table'] = True
+						refer_resource_info['should_generate_n2n_table'] = False
 			else:
 				resource.refers = []
 
-		#构建resource之间的关系
-		for resource in resources:
-			for refer_resource_info in resource.refers:
-				#检查循环refer
-				resource_name = refer_resource_info['resource_name']
-				refer_resource = name2resource[resource_name]
-				if refer_resource.refers:
-					can_ignore_refer_resource = False
-					for refer_2_resource in refer_resource.refers:
-						if refer_2_resource['resource'].name == resource.name:
-							#发现循环refer，表明不用处理该refer_resource了
-							can_ignore_refer_resource = True
-							break
-
-					if can_ignore_refer_resource:
-						continue
-
-				#处理resource与refer_resource
-				refer_type = refer_resource_info['type']
-				items = refer_type.split('-')
-				if len(items) != 2:
-					print '[ERROR] invalid refer_type `%s`' % refer_type
-					sys.exit(1)
-				self_quantity = items[0]
-				other_quantity = items[1]
-				refer_resource_info['quantity'] = self_quantity
-				refer_resource_info['enable_fill_object'] = (refer_type == 'n-1' and self_quantity == 'n')
-				refer_resource_info['enable_fill_objects'] = (refer_type == 'n-n')
-				if not 'is_relation_master' in refer_resource_info:
-					refer_resource_info['is_relation_master'] = False
-				refer_resource.refers.append({
-					'resource_name': resource.name,
-					'resource': name2resource[resource.name],
-					'type': refer_type,
-					'quantity': other_quantity,
-					'enable_fill_object': (refer_resource_info.get('enable_refer_fill', False) and (refer_type == 'n-1' and other_quantity == 'n')),
-					'enable_fill_objects': (refer_resource_info.get('enable_refer_fill', False) and (refer_type == 'n-n')),
-					'should_generate_n2n_table': False,
-					'is_relation_master': False
-				})
+		# #构建resource之间的关系
+		# for resource in resources:
+		# 	for refer_resource_info in resource.refers:
+		# 		#检查循环refer
+		# 		resource_name = refer_resource_info['resource_name']
+		# 		refer_resource = name2resource[resource_name]
+		# 		if refer_resource.refers:
+		# 			can_ignore_refer_resource = False
+		# 			for refer_2_resource in refer_resource.refers:
+		# 				if refer_2_resource['resource'].name == resource.name:
+		# 					#发现循环refer，表明不用处理该refer_resource了
+		# 					can_ignore_refer_resource = True
+		# 					break
+		#
+		# 			if can_ignore_refer_resource:
+		# 				continue
+		#
+		# 		#处理resource与refer_resource
+		# 		refer_type = refer_resource_info['type']
+		# 		items = refer_type.split('-')
+		# 		if len(items) != 2:
+		# 			print '[ERROR] invalid refer_type `%s`' % refer_type
+		# 			sys.exit(1)
+		# 		self_quantity = items[0]
+		# 		other_quantity = items[1]
+		# 		refer_resource_info['quantity'] = other_quantity
+		# 		refer_resource_info['enable_fill_objects'] = False
+		# 		refer_resource_info['enable_fill_object'] = False
+		# 		refer_resource_info['present_when_create'] = False
+		# 		reverse_present_when_create = False
+		# 		refer_resource_info['present_when_update'] = False
+		# 		reverse_present_when_update = False
+		#
+		# 		reverse_fill_n_in_1 = False
+		# 		reverse_fill_1_in_n = False
+		# 		reverse_fill_object = False
+		# 		reverse_fill_objects = False
+		# 		if not 'enable_fill_n_in_1' in refer_resource_info:
+		# 			refer_resource_info['enable_fill_n_in_1'] = False
+		# 		if not 'enable_fill_1_in_n' in refer_resource_info:
+		# 			refer_resource_info['enable_fill_1_in_n'] = False
+		#
+		# 		if refer_type == 'n-1':
+		# 			if self_quantity == 'n':
+		# 				print '@1'
+		# 				refer_resource_info['enable_fill_object'] = refer_resource_info.get('enable_fill_1_in_n', False)
+		# 				refer_resource_info['enable_fill_objects'] = False
+		# 				reverse_fill_n_in_1 = refer_resource_info.get('enable_fill_n_in_1', False)
+		# 				reverse_fill_objects = reverse_fill_n_in_1
+		#
+		# 				refer_resource_info['present_when_create'] = True
+		# 				reverse_present_when_create = refer_resource_info.get('present_when_create_1', False)
+		# 				refer_resource_info['present_when_update'] = True
+		# 				reverse_present_when_update = refer_resource_info.get('present_when_update_1', False)
+		# 			else:
+		# 				print '@2'
+		# 				refer_resource_info['enable_fill_objects'] = refer_resource_info.get('enable_fill_n_in_1', False)
+		# 				refer_resource_info['enable_fill_object'] = False
+		# 				reverse_fill_1_in_n = refer_resource_info.get('enable_fill_1_in_n', False)
+		# 				reverse_fill_object = reverse_fill_1_in_n
+		# 		if refer_type == 'n-n':
+		# 			refer_resource_info['enable_fill_object'] = False
+		# 			refer_resource_info['enable_fill_objects'] = True
+		# 			reverse_fill_objects = True
+		#
+		# 		if not 'is_relation_master' in refer_resource_info:
+		# 			refer_resource_info['is_relation_master'] = False
+		# 		refer_resource.refers.append({
+		# 			'resource_name': resource.name,
+		# 			'resource': name2resource[resource.name],
+		# 			'type': refer_type,
+		# 			'quantity': self_quantity,
+		# 			'present_when_create': reverse_present_when_create,
+		# 			'present_when_update': reverse_present_when_update,
+		# 			'enable_fill_1_in_n': reverse_fill_1_in_n,
+		# 			'enable_fill_n_in_1': reverse_fill_n_in_1,
+		# 			'enable_fill_object': reverse_fill_object,
+		# 			'enable_fill_objects': reverse_fill_objects,
+		# 			'should_generate_n2n_table': False,
+		# 			'is_relation_master': False
+		# 		})
 
 	@staticmethod
 	def parse():
@@ -702,7 +781,7 @@ class Command(object):
 		}, {
 			'src': 'rest',
 			'dst': 'rest',
-			'ignore': ['resource.go', 'corp_resources.go', 'disabled_resource.go']
+			'ignore': ['resource.go', 'corp_resources.go', 'user_resources.go', 'disabled_resource.go']
 		}, {
 			'src': 'features',
 			'dst': 'features',
@@ -829,7 +908,6 @@ class Command(object):
 				"encode_product_service.go"] if not app_info.app_resource else None,
 			"context": app_info_dict
 		})
-		return
 		self.generate_file({
 			"file_type": "rest",
 			"file_suffixs": [".go",],
@@ -838,6 +916,7 @@ class Command(object):
 				'resource_display_index.go': '%(resource.name)s_display_index.go',
 				'resources.go': '%(resource.plural_name)s.go',
 				'corp_resources.go': 'corp_%(resource.plural_name)s.go',
+				'user_resources.go': 'user_%(resource.plural_name)s.go',
 				'disabled_resource.go': 'disabled_%(resource.name)s.go'
 			},
 			"file_map": None,
@@ -847,6 +926,7 @@ class Command(object):
 				"product.go", "corp_products.go", "products.go", "disabled_product.go"] if not app_info.app_resource else None,
 			"context": app_info_dict
 		})
+		return
 
 
 		#genearete features & steps

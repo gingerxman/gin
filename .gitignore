@@ -23,4 +23,4 @@ _gofile_template
 app.json
 service.json
 dev.sh
-
+_gen_workspace/

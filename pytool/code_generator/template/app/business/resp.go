@@ -41,7 +41,7 @@ type RActivity struct {
 	Ranking int `json:"ranking"`
 	IsCashed bool `json:"is_cashed"`
 	{%- for refer in app_activity_resource.refers %}
-	{%- if refer.enable_fill_objects %}
+	{%- if refer.enable_fill_nto1_n or refer.enable_fill_nton %}
 	{{refer.resource.plural_class_name}} []*R{{refer.resource.class_name}} `json:"{{refer.resource.plural_name}}"`{{""-}}
 	{%- endif -%}
 	{%- endfor %}
@@ -72,7 +72,7 @@ type RApp struct {
 	Detail *RAppDetail `json:"detail"`
 	Products []*RProduct `json:"products"`
 	{%- for refer in app_resource.refers %}
-	{%- if refer.enable_fill_objects %}
+	{%- if refer.enable_fill_nto1_n or refer.enable_fill_nton %}
 	{{refer.resource.plural_class_name}} []*R{{refer.resource.class_name}} `json:"{{refer.resource.plural_name}}"`{{""-}}
 	{%- endif -%}
 	{%- endfor %}
@@ -87,7 +87,7 @@ type R{{resource.class_name}} struct {
 	{%- endfor %}
 
 	{%- for refer in resource.refers %}
-	{%- if refer.enable_fill_object %}
+	{%- if refer.enable_fill_nto1_1 %}
 	{{refer.resource.class_name}} *R{{refer.resource.class_name}} `json:"{{refer.resource.name}}"`{{""-}}
 	{%- endif %}
 	{%- if refer.enable_fill_objects %}
@@ -97,8 +97,6 @@ type R{{resource.class_name}} struct {
 	{%- if resource.enable_display_index %}
 	DisplayIndex int `json:"display_index"`
 	{%- endif %}
-	IsEnabled bool `json:"is_enabled"`
-	IsDeleted bool `json:"is_deleted"`
 	CreatedAt string `json:"created_at"`
 }
 {% endfor %}

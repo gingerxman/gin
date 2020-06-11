@@ -23,10 +23,10 @@ func (this *Encode{{class_name}}Service) Encode({{var_name}} *{{class_name}}) *R
 	}
 
 	{%- for refer in refers %}
-	{%- if refer.enable_fill_object %}
+	{%- if refer.enable_fill_nto1_1 %}
 	r{{refer.resource.class_name}} := NewEncode{{refer.resource.class_name}}Service(this.Ctx).Encode({{var_name}}.{{refer.resource.class_name}})
 	{%- endif %}
-	{%- if refer.enable_fill_objects %}
+	{%- if refer.enable_fill_nto1_n or refer.enable_fill_nton %}
 	r{{refer.resource.plural_class_name}} := NewEncode{{refer.resource.class_name}}Service(this.Ctx).EncodeMany({{var_name}}.{{refer.resource.plural_class_name}})
 	{%- endif %}
 	{%- endfor %}
@@ -42,10 +42,10 @@ func (this *Encode{{class_name}}Service) Encode({{var_name}} *{{class_name}}) *R
 		{%- endfor %}
 
 		{%- for refer in refers %}
-		{%- if refer.enable_fill_object %}
+		{%- if refer.enable_fill_nto1_1 %}
 		{{refer.resource.class_name}}: r{{refer.resource.class_name}},{{""-}}
 		{%- endif %}
-		{%- if refer.enable_fill_objects %}
+		{%- if refer.enable_fill_nto1_n or enable_fill_nton %}
 		{{refer.resource.plural_class_name}}: r{{refer.resource.plural_class_name}},{{""-}}
 		{%- endif %}
 		{%- endfor %}

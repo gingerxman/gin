@@ -67,8 +67,9 @@ func (this *{{class_name}}Repository) GetPaged{{plural_class_name}}(filters eel.
 	return instances, paginateResult
 }
 
+{% if belong_to_corp -%}
 //GetEnabled{{plural_class_name}}ForCorp 获得启用的{{class_name}}对象集合
-func (this *{{class_name}}Repository) GetEnabled{{plural_class_name}}ForCorp(corp business.ICorp, page *eel.PageInfo, filters eel.Map) ([]*{{class_name}}, eel.INextPageInfo) {
+func (this *{{class_name}}Repository) GetEnabled{{plural_class_name}}ForCorp(corp business.ICorp, filters eel.Map, page *eel.PageInfo) ([]*{{class_name}}, eel.INextPageInfo) {
 	filters["corp_id"] = corp.GetId()
 	filters["is_enabled"] = true
 	filters["is_deleted"] = false
@@ -80,7 +81,7 @@ func (this *{{class_name}}Repository) GetEnabled{{plural_class_name}}ForCorp(cor
 }
 
 //GetAll{{plural_class_name}}ForCorp 获得所有{{class_name}}对象集合
-func (this *{{class_name}}Repository) GetAll{{plural_class_name}}ForCorp(corp business.ICorp, page *eel.PageInfo, filters eel.Map) ([]*{{class_name}}, eel.INextPageInfo) {
+func (this *{{class_name}}Repository) GetAll{{plural_class_name}}ForCorp(corp business.ICorp, filters eel.Map, page *eel.PageInfo) ([]*{{class_name}}, eel.INextPageInfo) {
 	filters["corp_id"] = corp.GetId()
 	filters["is_deleted"] = false
 	{% if enable_display_index %}
@@ -105,9 +106,67 @@ func (this *{{class_name}}Repository) Get{{class_name}}InCorp(corp business.ICor
 		return {{plural_var_name}}[0]
 	}
 }
+{%- endif %}
 
-//Get{{class_name}} 根据id和corp获得{{class_name}}对象
-func (this *{{class_name}}Repository) Get{{class_name}}(id int) *{{class_name}} {
+{%- if belong_to_user -%}
+func (this *{{class_name}}Repository) GetEnabled{{plural_class_name}}ForUser(user business.IUser, filters eel.Map, page *eel.PageInfo) ([]*{{class_name}}, eel.INextPageInfo) {
+	filters["user_id"] = user.GetId()
+	filters["is_enabled"] = true
+	filters["is_deleted"] = false
+	{% if enable_display_index %}
+	return this.GetPaged{{plural_class_name}}(filters, page, "display_index")
+	{% else %}
+	return this.GetPaged{{plural_class_name}}(filters, page, "id")
+	{% endif %}
+}
+
+func (this *{{class_name}}Repository) GetAll{{plural_class_name}}ForUser(user business.IUser, filters eel.Map, page *eel.PageInfo) ([]*{{class_name}}, eel.INextPageInfo) {
+	filters["user_id"] = user.GetId()
+	filters["is_deleted"] = false
+	{% if enable_display_index %}
+	return this.GetPaged{{plural_class_name}}(filters, page, "display_index")
+	{% else %}
+	return this.GetPaged{{plural_class_name}}(filters, page, "id")
+	{% endif %}
+}
+
+func (this *{{class_name}}Repository) Get{{class_name}}ForUser(user business.IUser, id int) *{{class_name}} {
+	filters := eel.Map{
+		"user_id": user.GetId(),
+		"id": id,
+	}
+
+	{{plural_var_name}} := this.Get{{plural_class_name}}(filters)
+	
+	if len({{plural_var_name}}) == 0 {
+		return nil
+	} else {
+		return {{plural_var_name}}[0]
+	}
+}
+{%- endif %}
+
+func (this *{{class_name}}Repository) GetAll{{plural_class_name}}(filters eel.Map, page *eel.PageInfo) ([]*{{class_name}}, eel.INextPageInfo) {
+	filters["is_deleted"] = false
+	{% if enable_display_index %}
+	return this.GetPaged{{plural_class_name}}(filters, page, "display_index")
+	{% else %}
+	return this.GetPaged{{plural_class_name}}(filters, page, "id")
+	{% endif %}
+}
+
+func (this *{{class_name}}Repository) Get{{plural_class_name}}ByIds(ids []int) []*{{class_name}} {
+	filters := eel.Map{
+		"id__in": ids,
+	}
+	{% if enable_display_index %}
+	return this.Get{{plural_class_name}}(filters, "display_index")
+	{% else %}
+	return this.Get{{plural_class_name}}(filters, "id")
+	{% endif %}
+}
+
+func (this *{{class_name}}Repository) Get{{class_name}}ById(id int) *{{class_name}} {
 	filters := eel.Map{
 		"id": id,
 	}

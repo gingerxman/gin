@@ -24,14 +24,14 @@ type {{class_name}} struct {
 	{%- endif %}
 	CreatedAt time.Time
 
-	//foreign key
+	//refer object
 	{%- for refer in refers %}
-	{%- if refer.enable_fill_object %}
+	{%- if refer.enable_fill_nto1_1 %}
 	{{refer.resource.class_name}}Id int //refer to {{refer.resource.name}}
 	{{refer.resource.class_name}} *{{refer.resource.class_name}}
 	{%- endif %}
 
-	{%- if refer.enable_fill_objects %}
+	{%- if refer.enable_fill_nto1_n or refer.enable_fill_nton %}
 	{{refer.resource.plural_class_name}} []*{{refer.resource.class_name}}
 	{%- endif %}
 	{%- endfor %}
@@ -44,13 +44,13 @@ func (this *{{class_name}}) Update(
 	{% endfor %}
 
 	{%- for refer in refers %}
-	{%- if refer.enable_fill_object %}
+	{%- if refer.update_nto1_1 %}
 	{{refer.resource.var_name}}Id int,{{""-}}
 	{%- endif %}
 	{%- endfor %}
 
 	{%- for refer in refers %}
-	{%- if refer.enable_fill_objects %}
+	{%- if refer.update_nto1_n or refer.update_nton %}
 	{{refer.resource.var_name}}Ids []int,{{""-}}
 	{%- endif %}
 	{%- endfor %}
@@ -63,7 +63,7 @@ func (this *{{class_name}}) Update(
 		{% endfor %}
 
 		{%- for refer in refers %}
-		{%- if refer.enable_fill_object %}
+		{%- if refer.update_nto1_1 %}
 		"{{ refer.resource.name }}_id": {{ refer.resource.var_name }}Id,{{""-}}
 		{%- endif %}
 		{%- endfor %}
@@ -75,7 +75,7 @@ func (this *{{class_name}}) Update(
 	}
 
 	{%- for refer in refers %}
-	{%- if refer.enable_fill_objects %}
+	{%- if refer.update_nto1_n or refer.update_nton %}
 
 	//删除{{class_name}}Has{{refer.resource.class_name}}中的老数据
 	db = o.Where("{{name}}_id", this.Id).Delete(&m_{{package}}.{{class_name}}Has{{refer.resource.class_name}}{})
@@ -170,13 +170,13 @@ func New{{class_name}}(
 	{% endfor %}
 
 	{%- for refer in refers %}
-	{%- if refer.enable_fill_object %}
-	{{refer.resource.var_name}}Id int,{{""-}}
+	{%- if refer.create_nto1_1 %}
+	{{refer.resource.var_name}} *{{refer.resource.class_name}},{{""-}}
 	{%- endif %}
 	{%- endfor %}
 
 	{%- for refer in refers %}
-	{%- if refer.enable_fill_objects %}
+	{%- if refer.create_nto1_n %}
 	{{refer.resource.var_name}}Ids []int,{{""-}}
 	{%- endif %}
 	{%- endfor %}
@@ -196,8 +196,8 @@ func New{{class_name}}(
 	{% endfor %}
 
 	{%- for refer in refers %}
-	{%- if refer.enable_fill_object %}
-	model.{{refer.resource.class_name}}Id = {{refer.resource.var_name}}Id
+	{%- if refer.create_nto1_1 %}
+	model.{{refer.resource.class_name}}Id = {{refer.resource.var_name}}.Id
 	{%- endif %}
 	{%- endfor %}
 	db := o.Create(&model)
@@ -217,7 +217,7 @@ func New{{class_name}}(
 	{%- endif %}
 
 	{%- for refer in refers %}
-	{%- if refer.enable_fill_objects %}
+	{%- if refer.create_nto1_n %}
 
 	//创建{{class_name}}Has{{refer.resource.class_name}}记录
 	for _, {{refer.resource.var_name}}Id := range {{refer.resource.var_name}}Ids {

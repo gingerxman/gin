@@ -5,7 +5,7 @@ import (
 	"{{service_name}}/business/account"
 
 	"github.com/gingerxman/eel"
-	"{{service_name}}/business/{{package}}"
+	b_{{package}} "{{service_name}}/business/{{package}}"
 )
 
 type Disabled{{class_name}} struct {
@@ -27,10 +27,15 @@ func (this *Disabled{{class_name}}) Put(ctx *eel.Context) {
 	req := ctx.Request
 	bCtx := ctx.GetBusinessContext()
 	
-	corp := account.GetCorpFromContext(bCtx)
 	id, _ := req.GetInt("id")
-	repository := {{package}}.New{{class_name}}Repository(bCtx)
-	{{var_name}} := repository.Get{{class_name}}InCorp(corp, id)
+	{% if belong_to_user -%}
+	user := account.GetUserFromContext(bCtx)
+	{{var_name}} := b_{{package}}.New{{class_name}}Repository(bCtx).Get{{class_name}}ForUser(user, id)
+	{% endif -%}
+	{% if belong_to_corp -%}
+	corp := account.GetCorpFromContext(bCtx)
+	{{var_name}} := b_{{package}}.New{{class_name}}Repository(bCtx).Get{{class_name}}InCorp(corp, id)
+	{% endif -%}
 
 	if {{var_name}} == nil {
 		ctx.Response.Error( "disabled_{{name}}:invalid_{{var_name}}", fmt.Sprintf("id(%d)", id))
@@ -46,10 +51,15 @@ func (this *Disabled{{class_name}}) Delete(ctx *eel.Context) {
 	req := ctx.Request
 	bCtx := ctx.GetBusinessContext()
 	
-	corp := account.GetCorpFromContext(bCtx)
 	id, _ := req.GetInt("id")
-	repository := {{package}}.New{{class_name}}Repository(bCtx)
-	{{var_name}} := repository.Get{{class_name}}InCorp(corp, id)
+	{% if belong_to_user -%}
+	user := account.GetUserFromContext(bCtx)
+	{{var_name}} := b_{{package}}.New{{class_name}}Repository(bCtx).Get{{class_name}}ForUser(user, id)
+	{% endif -%}
+	{% if belong_to_corp -%}
+	corp := account.GetCorpFromContext(bCtx)
+	{{var_name}} := b_{{package}}.New{{class_name}}Repository(bCtx).Get{{class_name}}InCorp(corp, id)
+	{% endif -%}
 
 	if {{var_name}} == nil {
 		ctx.Response.Error( "disabled_{{name}}:invalid_{{var_name}}", fmt.Sprintf("id(%d)", id))

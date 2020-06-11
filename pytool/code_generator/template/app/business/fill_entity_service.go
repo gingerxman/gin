@@ -33,7 +33,7 @@ func (this *Fill{{class_name}}Service) Fill({{plural_var_name}} []*{{class_name}
 	}
 
 	{%- for refer in refers %}
-	{%- if refer.enable_fill_object or refer.enable_fill_objects %}
+	{%- if refer.enable_fill_nto1_1 or refer.enable_fill_nto1_n or enable_fill_nton %}
 
 	if enableOption, ok := option["with_{{refer.resource_name}}"]; ok && enableOption {
 		this.fill{{refer.resource.class_name}}({{plural_var_name}}, ids)
@@ -45,7 +45,7 @@ func (this *Fill{{class_name}}Service) Fill({{plural_var_name}} []*{{class_name}
 }
 
 {%- for refer in refers %}
-{%- if refer.enable_fill_object %}
+{%- if refer.enable_fill_nto1_1 %}
 
 
 func (this *Fill{{class_name}}Service) fill{{refer.resource.class_name}}({{plural_var_name}} []*{{class_name}}, ids []int) {
@@ -55,31 +55,23 @@ func (this *Fill{{class_name}}Service) fill{{refer.resource.class_name}}({{plura
 		{{refer.resource.var_name}}Ids = append({{refer.resource.var_name}}Ids, {{var_name}}.{{refer.resource.class_name}}Id)
 	}
 
-	//从db中获取{{refer.resource.resource_class_name}}数据集合
-	var models []*m_{{package}}.{{refer.resource.class_name}}
-	o := eel.GetOrmFromContext(this.Ctx)
-	db := o.Model(&m_{{package}}.{{refer.resource.class_name}}{}).Where("id__in", {{refer.resource.var_name}}Ids).Find(&models)
-	if db.Error != nil {
-		eel.Logger.Error(db.Error)
-		return
-	}
-
-	//构建<id, model>
-	id2model := make(map[int]*m_{{package}}.{{refer.resource.class_name}})
-	for _, model := range models {
-		id2model[model.Id] = model
+	//获取{{refer.resource.plural_var_name}}, 构建<id, {{refer.resource.var_name}}>
+	{{refer.resource.plural_var_name}} := New{{refer.resource.class_name}}Repository(this.Ctx).Get{{refer.resource.plural_class_name}}ByIds({{refer.resource.var_name}}Ids)
+	id2{{refer.resource.var_name}} := make(map[int]*{{refer.resource.class_name}})
+	for _, {{refer.resource.var_name}} := range {{refer.resource.plural_var_name}} {
+		id2{{refer.resource.var_name}}[{{refer.resource.var_name}}.Id] = {{ refer.resource.var_name }}
 	}
 
 	//填充{{name}}的{{refer.resource.class_name}}对象
 	for _, {{var_name}} := range {{plural_var_name}} {
-		if model, ok := id2model[{{var_name}}.{{refer.resource.class_name}}Id]; ok {
-			{{var_name}}.{{refer.resource.class_name}} = New{{refer.resource.class_name}}FromModel(this.Ctx, model)
+		if {{refer.resource.var_name}}, ok := id2{{refer.resource.var_name}}[{{var_name}}.{{refer.resource.class_name}}Id]; ok {
+			{{var_name}}.{{refer.resource.class_name}} = {{refer.resource.var_name}}
 		}
 	}
 }
 {%- endif %}
 
-{%- if refer.enable_fill_objects and refer.type == 'n-1' %}
+{%- if refer.enable_fill_nto1_n %}
 
 
 func (this *Fill{{class_name}}Service) fill{{refer.resource.class_name}}({{plural_var_name}} []*{{class_name}}, ids []int) {
@@ -106,7 +98,7 @@ func (this *Fill{{class_name}}Service) fill{{refer.resource.class_name}}({{plura
 }
 {%- endif %}
 
-{%- if refer.enable_fill_objects and refer.type == 'n-n' %}
+{%- if refer.enable_fill_nton %}
 
 
 func (this *Fill{{class_name}}Service) fill{{refer.resource.class_name}}({{plural_var_name}} []*{{class_name}}, ids []int) {

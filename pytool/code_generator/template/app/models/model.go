@@ -150,7 +150,7 @@ func (self *ActivityHas{{refer.resource.class_name}}) TableName() string {
 type {{resource.class_name}} struct {
 	eel.Model
 	{%- for refer in resource.refers %}
-	{%- if refer.type == 'n-1' and refer.quantity == 'n' %}
+	{%- if refer.type == 'n-1' and refer.quantity == '1' %}
 	{{ refer.resource.class_name }}Id int //foreign key {{refer.resource.name}}
 	{%- endif %}
 	{%- endfor %}
