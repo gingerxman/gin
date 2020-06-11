@@ -5,6 +5,7 @@ import (
 
 	"github.com/gingerxman/eel"
 )
+var _ time.Time
 
 {%- if app_resource %}
 

@@ -52,8 +52,6 @@ func (this *Encode{{class_name}}Service) Encode({{var_name}} *{{class_name}}) *R
 		{%- if enable_display_index %}
 		DisplayIndex: {{var_name}}.DisplayIndex,
 		{%- endif %}
-		IsEnabled: {{var_name}}.IsEnabled,
-		IsDeleted: {{var_name}}.IsDeleted,
 		CreatedAt: {{var_name}}.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 }

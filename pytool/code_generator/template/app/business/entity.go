@@ -56,7 +56,7 @@ func (this *{{class_name}}) Update(
 ) error {
 	o := eel.GetOrmFromContext(this.Ctx)
 
-	db := o.Model(&m_{{package}}.{{class_name}}).Where("id", this.Id).Update(gorm.Params{
+	db := o.Model(&m_{{package}}.{{class_name}}{}).Where("id", this.Id).Update(gorm.Params{
 		{%- for field in updatable_fields %}
 		"{{ field.snake_name }}": {{ field.var_name }},{{""-}}
 		{% endfor %}
@@ -125,7 +125,7 @@ func (this *{{class_name}}) Delete() error {
 	o := eel.GetOrmFromContext(this.Ctx)
 	
 	db := o.Model(&m_{{package}}.{{class_name}}{}).Where(eel.Map{
-		"id", this.Id,
+		"id": this.Id,
 	}).Update(gorm.Params{
 		"is_deleted": true,
 	})

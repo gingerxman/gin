@@ -2,7 +2,6 @@ package {{package}}
 
 import (
 	"context"
-	"{{service_name}}/business"
 	m_{{package}} "{{service_name}}/models/{{package}}"
 
 	"github.com/gingerxman/eel"

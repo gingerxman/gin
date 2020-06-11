@@ -2,7 +2,7 @@ package {{package}}
 
 import (
 	"{{service_name}}/business/{{package}}"
-	"{{service_name}}/business/account"
+	{%- if belong_to_corp or belong_to_user -%}"{{service_name}}/business/account"{%- endif %}
 
 	"github.com/gingerxman/eel"
 )
@@ -35,6 +35,9 @@ func (this *{{plural_class_name}}) Get(ctx *eel.Context) {
 	{% if belong_to_corp -%}
 	corp := account.GetCorpFromContext(bCtx)
 	{{plural_var_name}}, nextPageInfo := repository.GetEnabled{{plural_class_name}}ForCorp(corp, filters, page)
+	{%- endif %}
+	{% if belong_to_platform -%}
+	{{plural_var_name}}, nextPageInfo := repository.GetPaged{{plural_class_name}}(filters, page)
 	{%- endif %}
 	fillService := {{package}}.NewFill{{class_name}}Service(bCtx)
 	fillService.Fill({{plural_var_name}}, eel.FillOption{

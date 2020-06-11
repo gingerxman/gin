@@ -250,7 +250,7 @@ class Resource(object):
 		self.plural_name = get_plural_name(self.name)
 		self.cn_name = data['cn_name']
 		self.enable_display_index = data.get('enable_display_index', False)
-		self.data_owner = data.get('data_owner', '') # 数据的所有者: corp, user, platform
+		self.data_owner = data.get('data_owner', 'platform') # 数据的所有者: corp, user, platform
 
 		class_name = snake2camel(self.name)
 		self.class_name = class_name
@@ -274,23 +274,7 @@ class Resource(object):
 				"is_data_owner_fk": True,
 				"valid_when_update": False,
 				"valid_when_create": False,
-				"orm_annatation": '`gorm:"index:userid_isdelete_isenable"`'
-			}))
-			self.fields.append(Field("resource", {
-				"name": "IsEnabled",
-				"type": "bool",
-				"default": 'true',
-				"valid_when_update": False,
-				"valid_when_create": False,
-				"orm_annatation": '`gorm:"index:userid_isdelete_isenable"`'
-			}))
-			self.fields.append(Field("resource", {
-				"name": "IsDeleted",
-				"type": "bool",
-				"default": 'false',
-				"valid_when_update": False,
-				"valid_when_create": False,
-				"orm_annatation": '`gorm:"index:userid_isdelete_isenable"`'
+				"orm_annatation": '`gorm:"index:ownerid_isdelete_isenable"`'
 			}))
 			self.fields[0].iface = {
 				"var_name": "user",
@@ -303,26 +287,29 @@ class Resource(object):
 				"is_data_owner_fk": True,
 				"valid_when_update": False,
 				"valid_when_create": False,
-				"orm_annatation": '`gorm:"index:corpid_isdelete_isenable"`'
-			}))
-			self.fields.append(Field("resource", {
-				"name": "IsEnabled",
-				"type": "bool",
-				"valid_when_update": False,
-				"valid_when_create": False,
-				"orm_annatation": '`gorm:"index:corpid_isdelete_isenable"`'
-			}))
-			self.fields.append(Field("resource", {
-				"name": "IsDeleted",
-				"type": "bool",
-				"valid_when_update": False,
-				"valid_when_create": False,
-				"orm_annatation": '`gorm:"index:corpid_isdelete_isenable"`'
+				"orm_annatation": '`gorm:"index:ownerid_isdelete_isenable"`'
 			}))
 			self.fields[0].iface = {
 				"var_name": "corp",
 				"type": "business.ICorp"
 			}
+
+		self.fields.append(Field("resource", {
+			"name": "IsEnabled",
+			"type": "bool",
+			"default": "true",
+			"valid_when_update": False,
+			"valid_when_create": False,
+			"orm_annatation": '`gorm:"index:ownerid_isdelete_isenable"`'
+		}))
+		self.fields.append(Field("resource", {
+			"name": "IsDeleted",
+			"type": "bool",
+			"default": "false",
+			"valid_when_update": False,
+			"valid_when_create": False,
+			"orm_annatation": '`gorm:"index:ownerid_isdelete_isenable"`'
+		}))
 
 		#解析refer
 		self.refers = data.get('refers')
@@ -336,6 +323,10 @@ class Resource(object):
 		return self.data_owner == 'corp'
 
 	@property
+	def belong_to_platform(self):
+		return self.data_owner == 'platform'
+
+	@property
 	def has_name_field(self):
 		for field_info in self.fields:
 			if field_info.name == 'name':
@@ -346,7 +337,7 @@ class Resource(object):
 	@property
 	def should_import_model(self):
 		for refer in self.refers:
-			if refer['enable_fill_object'] or refer['enable_fill_objects']:
+			if refer['enable_fill_nto1_n'] or refer['enable_fill_nton']:
 				return True
 		return False
 
@@ -389,7 +380,8 @@ class Resource(object):
 			'should_import_model': self.should_import_model,
 			'should_select_other_resource_in_reactman': self.should_select_other_resource_in_reactman,
 			'belong_to_user': self.belong_to_user,
-			'belong_to_corp': self.belong_to_corp
+			'belong_to_corp': self.belong_to_corp,
+			'belong_to_platform': self.belong_to_platform,
 		}
 
 	def __repr__(self):
@@ -688,8 +680,21 @@ class Command(object):
 
 				file_path = "app/%s/%s" % (file_type, file_name)
 				for resource in resources:
+					if resource.belong_to_user and 'corp_resources.go' in file_path:
+						print 'ignore: %s for %s' % (file_path, resource.name)
+						continue
+
+					if resource.belong_to_corp and 'user_resources.go' in file_path:
+						print 'ignore: %s for %s' % (file_path, resource.name)
+						continue
+
+					if resource.belong_to_platform and (('corp_resources.go' in file_path) or ('user_resources.go' in file_path)):
+						print 'ignore: %s for %s' % (file_path, resource.name)
+						continue
+
 					if not resource.enable_display_index and 'display_index' in file_name:
 						continue
+
 					#替换文件名
 					file_name_context = {
 						"resource.name": resource.name,
@@ -929,40 +934,39 @@ class Command(object):
 				"product.go", "corp_products.go", "products.go", "disabled_product.go"] if not app_info.app_resource else None,
 			"context": app_info_dict
 		})
-		return
 
 
 		#genearete features & steps
-		feature_templates = {
-			'create_resource.feature': 'create_%(resource.name)s.feature',
-			'update_resource.feature': 'update_%(resource.name)s.feature',
-			'update_resource_display_index.feature': 'update_%(resource.name)s_display_index.feature',
-			'disable_resource.feature': 'disable_%(resource.name)s.feature',
-			'delete_resource.feature': 'delete_%(resource.name)s.feature',
-		}
-		self.generate_file({
-			"file_type": "features",
-			"file_suffixs": [".feature",],
-			"resource_templates": feature_templates,
-			"file_map": None,
-			"ignore_files": [
-				"change_app_status.feature", "create_app.feature", "update_app.feature",
-				"create_product.feature", "update_product.feature", "disable_product.feature",
-				"create_activity.feature", "pay_activity.feature"] if not app_info.app_resource else None,
-			"context": app_info_dict
-		})
-		self.generate_file({
-			"file_type": "steps",
-			"file_suffixs": [".py",],
-			"resource_templates": {
-				'resource_steps.py': '%(resource.name)s_steps.py'
-			},
-			"file_map": None,
-			"ignore_files": [
-				"app_steps.py", "product_steps.py", "activity_steps.py"
-			] if not app_info.app_resource else None,
-			"context": app_info_dict
-		})
+		# feature_templates = {
+		# 	'create_resource.feature': 'create_%(resource.name)s.feature',
+		# 	'update_resource.feature': 'update_%(resource.name)s.feature',
+		# 	'update_resource_display_index.feature': 'update_%(resource.name)s_display_index.feature',
+		# 	'disable_resource.feature': 'disable_%(resource.name)s.feature',
+		# 	'delete_resource.feature': 'delete_%(resource.name)s.feature',
+		# }
+		# self.generate_file({
+		# 	"file_type": "features",
+		# 	"file_suffixs": [".feature",],
+		# 	"resource_templates": feature_templates,
+		# 	"file_map": None,
+		# 	"ignore_files": [
+		# 		"change_app_status.feature", "create_app.feature", "update_app.feature",
+		# 		"create_product.feature", "update_product.feature", "disable_product.feature",
+		# 		"create_activity.feature", "pay_activity.feature"] if not app_info.app_resource else None,
+		# 	"context": app_info_dict
+		# })
+		# self.generate_file({
+		# 	"file_type": "steps",
+		# 	"file_suffixs": [".py",],
+		# 	"resource_templates": {
+		# 		'resource_steps.py': '%(resource.name)s_steps.py'
+		# 	},
+		# 	"file_map": None,
+		# 	"ignore_files": [
+		# 		"app_steps.py", "product_steps.py", "activity_steps.py"
+		# 	] if not app_info.app_resource else None,
+		# 	"context": app_info_dict
+		# })
 
 		#generate ui files
 		# self.generate_file({

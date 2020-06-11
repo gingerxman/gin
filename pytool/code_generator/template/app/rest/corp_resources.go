@@ -2,7 +2,7 @@ package {{package}}
 
 import (
 	"{{service_name}}/business/{{package}}"
-	"{{service_name}}/business/account"
+	{%- if belong_to_corp or belong_to_user -%}"{{service_name}}/business/account"{%- endif %}
 
 	"github.com/gingerxman/eel"
 )

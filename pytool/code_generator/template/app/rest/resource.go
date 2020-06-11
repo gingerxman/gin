@@ -2,12 +2,8 @@ package {{package}}
 
 import (
 	"fmt"
-	"{{service_name}}/business/account"
-	{% if name == package -%}
+	{%- if belong_to_corp or belong_to_user -%}"{{service_name}}/business/account"{%- endif %}
 	b_{{package}} "{{service_name}}/business/{{package}}"
-	{% else -%}
-	"{{service_name}}/business/{{package}}"
-	{% endif -%}
 
 	"github.com/gingerxman/eel"
 )
@@ -66,16 +62,26 @@ func (this *{{class_name}}) Get(ctx *eel.Context) {
 	req := ctx.Request
 	bCtx := ctx.GetBusinessContext()
 	id, _ := req.GetInt("id", 0)
-	repository := {% if name == package -%}b_{% endif %}{{package}}.New{{class_name}}Repository(bCtx)
+	repository := b_{{package}}.New{{class_name}}Repository(bCtx)
+	{% if belong_to_user -%}
+	user := account.GetUserFromContext(bCtx)
+	{{var_name}} := repository.Get{{class_name}}ForUser(user, id)
+	{% endif -%}
+	{% if belong_to_corp -%}
+	corp := account.GetCorpFromContext(bCtx)
+	{{var_name}} := repository.Get{{class_name}}InCorp(corp, id)
+	{% endif -%}
+	{% if belong_to_platform -%}
 	{{var_name}} := repository.Get{{class_name}}ById(id)
+	{% endif -%}
 
 	if {{var_name}} == nil {
 		ctx.Response.Error( "{{var_name}}:invalid_{{var_name}}", fmt.Sprintf("id(%d)", id))
 		return
 	}
 
-	fillService := {% if name == package -%}b_{% endif %}{{package}}.NewFill{{class_name}}Service(bCtx)
-	fillService.Fill([]*{% if name == package -%}b_{% endif %}{{package}}.{{class_name}}{ {{var_name}} }, eel.FillOption{
+	fillService := b_{{package}}.NewFill{{class_name}}Service(bCtx)
+	fillService.Fill([]*b_{{package}}.{{class_name}}{ {{var_name}} }, eel.FillOption{
 		{%- for refer in refers %}
 		{%- if refer.enable_fill_nto1_1 or refer.enable_fill_nto1_n or refer.enable_fill_nton %}
 		"with_{{ refer.resource.name }}": true,
@@ -83,7 +89,7 @@ func (this *{{class_name}}) Get(ctx *eel.Context) {
 		{%- endfor %}
 	})
 
-	encodeService := {% if name == package -%}b_{% endif %}{{package}}.NewEncode{{class_name}}Service(bCtx)
+	encodeService := b_{{package}}.NewEncode{{class_name}}Service(bCtx)
 	respData := encodeService.Encode({{var_name}})
 
 	ctx.Response.JSON(respData)
@@ -109,9 +115,9 @@ func (this *{{class_name}}) Put(ctx *eel.Context) {
 	{% endfor %}
 	
 	{% for refer in refers %}
-	{%- if refer.create_nto1_1 -%}
+	{% if refer.create_nto1_1 -%}
 	{{refer.resource.var_name}}Id, _ := req.GetInt("{{ refer.resource.name }}_id")
-	{{refer.resource.var_name}} := New{{refer.resource.class_name}}Repository(bCtx).Get{{refer.resource.class_name}}ById({{refer.resource.var_name}}Id)
+	{{refer.resource.var_name}} := b_{{package}}.New{{refer.resource.class_name}}Repository(bCtx).Get{{refer.resource.class_name}}ById({{refer.resource.var_name}}Id)
 	if {{refer.resource.var_name}} == nil {
 		ctx.Response.Error( "{{var_name}}:invalid_{{refer.resource.var_name}}", fmt.Sprintf("id(%d)", {{refer.resource.var_name}}Id))
 		return
@@ -131,7 +137,7 @@ func (this *{{class_name}}) Put(ctx *eel.Context) {
 	{% if belong_to_corp -%}
 	corp := account.GetCorpFromContext(bCtx)
 	{%- endif %}
-	{{var_name}} := {% if name == package -%}b_{% endif %}{{package}}.New{{class_name}}(
+	{{var_name}} := b_{{package}}.New{{class_name}}(
 		bCtx,
 		{% if belong_to_user -%}
 		user,
@@ -146,7 +152,7 @@ func (this *{{class_name}}) Put(ctx *eel.Context) {
 
 		{%- for refer in refers %}
 		{%- if refer.create_nto1_1 %}
-		{{refer.resource.var_name}}Id,{{""-}}
+		{{refer.resource.var_name}},{{""-}}
 		{%- endif %}
 		{%- endfor %}
 
@@ -194,7 +200,7 @@ func (this *{{class_name}}) Post(ctx *eel.Context) {
 	{%- endif %}
 	{%- endfor %}
 
-	repository := {% if name == package -%}b_{% endif %}{{package}}.New{{class_name}}Repository(bCtx)
+	repository := b_{{package}}.New{{class_name}}Repository(bCtx)
 	{% if belong_to_user -%}
 	user := account.GetUserFromContext(bCtx)
 	{{var_name}} := repository.Get{{class_name}}ForUser(user, id)
@@ -202,6 +208,9 @@ func (this *{{class_name}}) Post(ctx *eel.Context) {
 	{% if belong_to_corp -%}
 	corp := account.GetCorpFromContext(bCtx)
 	{{var_name}} := repository.Get{{class_name}}InCorp(corp, id)
+	{% endif -%}
+	{% if belong_to_platform -%}
+	{{var_name}} := repository.Get{{class_name}}ById(id)
 	{% endif -%}
 	if {{var_name}} == nil {
 		ctx.Response.Error( "{{var_name}}:invalid_{{var_name}}", fmt.Sprintf("id(%d)", id))
@@ -234,8 +243,8 @@ func (this *{{class_name}}) Delete(ctx *eel.Context) {
 	bCtx := ctx.GetBusinessContext()
 	
 	id, _ := req.GetInt("id")
-	repository := {% if name == package -%}b_{% endif %}{{package}}.New{{class_name}}Repository(bCtx)
-	
+	repository := b_{{package}}.New{{class_name}}Repository(bCtx)
+
 	{% if belong_to_user -%}
 	user := account.GetUserFromContext(bCtx)
 	{{var_name}} := repository.Get{{class_name}}ForUser(user, id)
@@ -243,6 +252,9 @@ func (this *{{class_name}}) Delete(ctx *eel.Context) {
 	{% if belong_to_corp -%}
 	corp := account.GetCorpFromContext(bCtx)
 	{{var_name}} := repository.Get{{class_name}}InCorp(corp, id)
+	{% endif -%}
+	{% if belong_to_platform -%}
+	{{var_name}} := repository.Get{{class_name}}ById(id)
 	{% endif -%}
 	if {{var_name}} == nil {
 		ctx.Response.Error( "{{var_name}}:invalid_{{var_name}}", fmt.Sprintf("id(%d)", id))

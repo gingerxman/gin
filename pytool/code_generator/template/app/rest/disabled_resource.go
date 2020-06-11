@@ -2,7 +2,7 @@ package {{package}}
 
 import (
 	"fmt"
-	"{{service_name}}/business/account"
+	{%- if belong_to_corp or belong_to_user -%}"{{service_name}}/business/account"{%- endif %}
 
 	"github.com/gingerxman/eel"
 	b_{{package}} "{{service_name}}/business/{{package}}"
@@ -36,6 +36,9 @@ func (this *Disabled{{class_name}}) Put(ctx *eel.Context) {
 	corp := account.GetCorpFromContext(bCtx)
 	{{var_name}} := b_{{package}}.New{{class_name}}Repository(bCtx).Get{{class_name}}InCorp(corp, id)
 	{% endif -%}
+	{% if belong_to_platform -%}
+	{{var_name}} := b_{{package}}.New{{class_name}}Repository(bCtx).Get{{class_name}}ById(id)
+	{% endif -%}
 
 	if {{var_name}} == nil {
 		ctx.Response.Error( "disabled_{{name}}:invalid_{{var_name}}", fmt.Sprintf("id(%d)", id))
@@ -59,6 +62,9 @@ func (this *Disabled{{class_name}}) Delete(ctx *eel.Context) {
 	{% if belong_to_corp -%}
 	corp := account.GetCorpFromContext(bCtx)
 	{{var_name}} := b_{{package}}.New{{class_name}}Repository(bCtx).Get{{class_name}}InCorp(corp, id)
+	{% endif -%}
+	{% if belong_to_platform -%}
+	{{var_name}} := b_{{package}}.New{{class_name}}Repository(bCtx).Get{{class_name}}ById(id)
 	{% endif -%}
 
 	if {{var_name}} == nil {
