@@ -60,6 +60,13 @@ class Field(object):
 			"json_must_func": 'MustString',
 			"rest_type": "string"
 		},
+		"text": {
+			"go_type": "string",
+			"json_type": "string",
+			"orm_annatation": '`gorm:"type:text"`',
+			"json_must_func": 'MustString',
+			"rest_type": "string"
+		},
 		"int": {
 			"go_type": "int",
 			"json_type": "int",
