@@ -33,7 +33,7 @@ func (this *Fill{{class_name}}Service) Fill({{plural_var_name}} []*{{class_name}
 	}
 
 	{%- for refer in refers %}
-	{%- if refer.enable_fill_nto1_1 or refer.enable_fill_nto1_n or enable_fill_nton %}
+	{%- if refer.enable_fill_nto1_1 or refer.enable_fill_nto1_n or refer.enable_fill_nton %}
 
 	if enableOption, ok := option["with_{{refer.resource_name}}"]; ok && enableOption {
 		this.fill{{refer.resource.class_name}}({{plural_var_name}}, ids)

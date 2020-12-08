@@ -45,7 +45,7 @@ func (this *Encode{{class_name}}Service) Encode({{var_name}} *{{class_name}}) *R
 		{%- if refer.enable_fill_nto1_1 %}
 		{{refer.resource.class_name}}: r{{refer.resource.class_name}},{{""-}}
 		{%- endif %}
-		{%- if refer.enable_fill_nto1_n or enable_fill_nton %}
+		{%- if refer.enable_fill_nto1_n or refer.enable_fill_nton %}
 		{{refer.resource.plural_class_name}}: r{{refer.resource.plural_class_name}},{{""-}}
 		{%- endif %}
 		{%- endfor %}

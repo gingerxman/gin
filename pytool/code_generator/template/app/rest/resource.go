@@ -31,7 +31,13 @@ func (this *{{class_name}}) GetParameters() map[string][]string {
 			{%- endfor %}
 
 			{%- for refer in refers %}
-			{%- if refer.create_nto1_n or refer.create_nton %}
+			{%- if refer.create_nto1_n %}
+			"{{refer.resource.plural_name}}:json-array",{{""-}}
+			{%- endif %}
+			{%- endfor %}
+
+			{%- for refer in refers %}
+			{%- if refer.create_nton %}
 			"{{refer.resource.name}}_ids:json-array",{{""-}}
 			{%- endif %}
 			{%- endfor %}
@@ -49,7 +55,13 @@ func (this *{{class_name}}) GetParameters() map[string][]string {
 			{%- endfor %}
 
 			{%- for refer in refers %}
-			{%- if refer.update_nto1_n or refer.update_nton %}
+			{%- if refer.create_nto1_n %}
+			"{{refer.resource.plural_name}}:json-array",{{""-}}
+			{%- endif %}
+			{%- endfor %}
+
+			{%- for refer in refers %}
+			{%- if refer.update_nton %}
 			"{{refer.resource.name}}_ids:json-array",{{""-}}
 			{%- endif %}
 			{%- endfor %}
@@ -126,7 +138,10 @@ func (this *{{class_name}}) Put(ctx *eel.Context) {
 	{%- endfor %}
 
 	{%- for refer in refers %}
-	{%- if refer.create_nto1_n or refer.create_nton %}
+	{%- if refer.create_nto1_n %}
+	{{refer.resource.plural_var_name}} := req.GetString("{{ refer.resource.plural_name }}")
+	{%- endif %}
+	{%- if refer.create_nton %}
 	{{refer.resource.var_name}}Ids := req.GetIntArray("{{ refer.resource.name }}_ids")
 	{%- endif %}
 	{%- endfor %}
@@ -157,7 +172,13 @@ func (this *{{class_name}}) Put(ctx *eel.Context) {
 		{%- endfor %}
 
 		{%- for refer in refers %}
-		{%- if refer.create_nto1_n or refer.create_nton %}
+		{%- if refer.update_nto1_n %}
+		{{refer.resource.plural_var_name}},{{""-}}
+		{%- endif %}
+		{%- endfor %}
+
+		{%- for refer in refers %}
+		{%- if refer.create_nton %}
 		{{refer.resource.var_name}}Ids,{{""-}}
 		{%- endif %}
 		{%- endfor %}
@@ -195,7 +216,13 @@ func (this *{{class_name}}) Post(ctx *eel.Context) {
 	{%- endfor %}
 
 	{%- for refer in refers %}
-	{%- if refer.update_nto1_n or refer.update_nton %}
+	{%- if refer.create_nto1_n %}
+	{{refer.resource.plural_var_name}} := req.GetString("{{ refer.resource.plural_name }}")
+	{%- endif %}
+	{%- endfor %}
+
+	{%- for refer in refers %}
+	{%- if refer.update_nton %}
 	{{refer.resource.var_name}}Ids := req.GetIntArray("{{ refer.resource.name }}_ids")
 	{%- endif %}
 	{%- endfor %}
@@ -229,7 +256,13 @@ func (this *{{class_name}}) Post(ctx *eel.Context) {
 		{%- endfor %}
 
 		{%- for refer in refers %}
-		{%- if refer.update_nto1_n or refer.update_nton %}
+		{%- if refer.update_nto1_n %}
+		{{refer.resource.plural_var_name}},{{""-}}
+		{%- endif %}
+		{%- endfor %}
+
+		{%- for refer in refers %}
+		{%- if refer.update_nton %}
 		{{refer.resource.var_name}}Ids,{{""-}}
 		{%- endif %}
 		{%- endfor %}

@@ -29,7 +29,7 @@ func (this *{{class_name}}DisplayIndex) Post(ctx *eel.Context) {
 	bCtx := ctx.GetBusinessContext()
 
 	id, _ := req.GetInt("id")
-	{{var_name}} := {{package}}.New{{class_name}}Repository(bCtx).Get{{class_name}}(id)
+	{{var_name}} := {{package}}.New{{class_name}}Repository(bCtx).Get{{class_name}}ById(id)
 
 	if {{var_name}} == nil {
 		ctx.Response.Error( "{{name}}_display_index:invalid_{{var_name}}", fmt.Sprintf("id(%d)", id))
@@ -37,7 +37,10 @@ func (this *{{class_name}}DisplayIndex) Post(ctx *eel.Context) {
 	}
 
 	action := req.GetString("action")
-	{{var_name}}.UpdateDisplayIndex(action)
+	err := {{var_name}}.UpdateDisplayIndex(action)
+	if err != nil {
+		eel.Logger.Error(err)
+	}
 
 	ctx.Response.JSON(eel.Map{})
 }

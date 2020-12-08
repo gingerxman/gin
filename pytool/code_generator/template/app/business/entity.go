@@ -6,6 +6,13 @@ import (
 	"context"
 	m_{{package}} "{{service_name}}/models/{{package}}"
 	"time"
+	{% if should_create_batch_json_factory %}
+	"encoding/json"
+	{%- endif -%}
+
+	{% if enable_display_index %}
+	"{{service_name}}/business/common"
+	{%- endif %}
 
 	"github.com/gingerxman/eel"
 	"github.com/gingerxman/gorm"
@@ -49,7 +56,13 @@ func (this *{{class_name}}) Update(
 	{%- endfor %}
 
 	{%- for refer in refers %}
-	{%- if refer.update_nto1_n or refer.update_nton %}
+	{%- if refer.update_nto1_n %}
+	{{refer.resource.plural_var_name}}JsonStr string,{{""-}}
+	{%- endif %}
+	{%- endfor %}
+
+	{%- for refer in refers %}
+	{%- if refer.update_nton %}
 	{{refer.resource.var_name}}Ids []int,{{""-}}
 	{%- endif %}
 	{%- endfor %}
@@ -74,7 +87,7 @@ func (this *{{class_name}}) Update(
 	}
 
 	{%- for refer in refers %}
-	{%- if refer.update_nto1_n or refer.update_nton %}
+	{%- if refer.update_nton %}
 
 	//删除{{class_name}}Has{{refer.resource.class_name}}中的老数据
 	db = o.Where("{{name}}_id", this.Id).Delete(&m_{{package}}.{{class_name}}Has{{refer.resource.class_name}}{})
@@ -93,6 +106,19 @@ func (this *{{class_name}}) Update(
 			panic(eel.NewBusinessError("{{name}}:create_relation_fail", fmt.Sprintf("创建失败")))
 		}
 	}
+	{%- endif %}
+	{%- endfor %}
+
+	{%- for refer in refers %}
+	{%- if refer.create_nto1_n %}
+	
+	//更新{{refer.resource.class_name}}记录
+	NewBatch{{refer.resource.plural_class_name}}FromJSON(
+		this.Ctx,
+		this,
+		{{refer.resource.plural_var_name}}JsonStr,
+		true,
+	)
 	{%- endif %}
 	{%- endfor %}
 
@@ -141,13 +167,13 @@ func (this *{{class_name}}) Delete() error {
 {% if enable_display_index %}
 func (this *{{class_name}}) UpdateDisplayIndex(action string) error {
 	model := m_{{package}}.{{class_name}}{}
-	item := itemPos{
+	item := common.ItemPos{
 		Id: this.Id,
 		DisplayIndex: this.DisplayIndex,
 		OriginalDisplayIndex: this.OriginalDisplayIndex,
 		Table: model.TableName(),
 	}
-	err := NewUpdateDisplayIndexService(this.Ctx, DISPLAY_INDEX_ORDER_ASC).Update(&item, action)
+	err := common.NewUpdateDisplayIndexService(this.Ctx, common.DISPLAY_INDEX_ORDER_ASC).Update(&item, action, eel.Map{})
 	if err != nil {
 		eel.Logger.Error(err)
 		return err
@@ -159,6 +185,56 @@ func (this *{{class_name}}) UpdateDisplayIndex(action string) error {
 {%- endif %}
 
 //工厂方法
+{%- if should_create_batch_json_factory %}
+type _{{class_name}}InputData struct {
+	{%- for field in creatable_fields %}
+	{{ field.name }} {{ field.json_type }} `json:"{{field.snake_name}}"`{{""-}}
+	{%- endfor %}
+}
+
+func NewBatch{{plural_class_name}}FromJSON(
+	ctx context.Context,
+	{%- if data_owner_field %}
+	{{data_owner_field.iface.var_name}} {{data_owner_field.iface.type}},
+	{%- endif %}
+
+	{%- for refer in refers %}
+	{%- if refer.create_nto1_1 %}
+	{{refer.resource.var_name}} *{{refer.resource.class_name}},{{""-}}
+	{%- endif %}
+	{%- endfor %}
+	
+	jsonStr string,
+	removeOldData bool,
+) {
+	inputDatas := make([]*_{{class_name}}InputData, 0)
+	err := json.Unmarshal([]byte(jsonStr), &inputDatas)
+	if err != nil {
+		eel.Logger.Error(err)
+		panic(eel.NewBusinessError("{{var_name}}:parse_batch_json_data_fail", "解析batch json data出错"))
+	}
+
+	for _, inputData := range inputDatas {
+		New{{class_name}}(
+			ctx,
+			{%- if data_owner_field %}
+			{{data_owner_field.iface.var_name}},
+			{%- endif %}
+
+			{%- for field in creatable_fields %}
+			inputData.{{ field.name }},{{""-}}
+			{% endfor %}
+
+			{%- for refer in refers %}
+			{%- if refer.create_nto1_1 %}
+			{{refer.resource.var_name}},{{""-}}
+			{%- endif %}
+			{%- endfor %}
+		)
+	}
+}
+{%- endif %}
+
 func New{{class_name}}(
 	ctx context.Context,
 	{%- if data_owner_field %}
@@ -175,7 +251,13 @@ func New{{class_name}}(
 	{%- endfor %}
 
 	{%- for refer in refers %}
-	{%- if refer.create_nto1_n %}
+	{%- if refer.update_nto1_n %}
+	{{refer.resource.plural_var_name}}JsonStr string,{{""-}}
+	{%- endif %}
+	{%- endfor %}
+
+	{%- for refer in refers %}
+	{%- if refer.create_nton %}
 	{{refer.resource.var_name}}Ids []int,{{""-}}
 	{%- endif %}
 	{%- endfor %}
@@ -216,7 +298,7 @@ func New{{class_name}}(
 	{%- endif %}
 
 	{%- for refer in refers %}
-	{%- if refer.create_nto1_n %}
+	{%- if refer.create_nton %}
 
 	//创建{{class_name}}Has{{refer.resource.class_name}}记录
 	for _, {{refer.resource.var_name}}Id := range {{refer.resource.var_name}}Ids {
@@ -232,7 +314,20 @@ func New{{class_name}}(
 	{%- endif %}
 	{%- endfor %}
 
-	return New{{class_name}}FromModel(ctx, &model)
+	instance := New{{class_name}}FromModel(ctx, &model)
+
+	{%- for refer in refers %}
+	{%- if refer.create_nto1_n %}
+	//创建{{refer.resource.class_name}}记录
+	NewBatch{{refer.resource.plural_class_name}}FromJSON(
+		ctx,
+		instance,
+		{{refer.resource.plural_var_name}}JsonStr,
+		false,
+	)
+	{%- endif %}
+	{%- endfor %}
+	return instance
 }
 
 //根据model构建对象

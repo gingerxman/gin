@@ -42,7 +42,7 @@ func (this *{{plural_class_name}}) Get(ctx *eel.Context) {
 	fillService := {{package}}.NewFill{{class_name}}Service(bCtx)
 	fillService.Fill({{plural_var_name}}, eel.FillOption{
 		{%- for refer in refers %}
-		{%- if refer.enable_fill_nto1_1 or refer.enable_fill_nto1_n or enable_fill_nton %}
+		{%- if refer.enable_fill_nto1_1 or refer.enable_fill_nto1_n or refer.enable_fill_nton %}
 		"with_{{ refer.resource.name }}": true,
 		{%- endif %}
 		{%- endfor %}

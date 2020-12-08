@@ -364,6 +364,12 @@ class Resource(object):
 		return None
 
 	def to_dict(self):
+		should_create_batch_json_factory = False
+		for refer in self.refers:
+			if refer['create_nto1_1']:
+				should_create_batch_json_factory = True
+				break
+
 		return {
 			"meta_type": self.meta_type,
 			"name": self.name,
@@ -384,6 +390,7 @@ class Resource(object):
 			"name_field": self.name_field,
 			'has_name_field': self.has_name_field,
 			'refers': self.refers,
+			'should_create_batch_json_factory': should_create_batch_json_factory,
 			'should_import_model': self.should_import_model,
 			'should_select_other_resource_in_reactman': self.should_select_other_resource_in_reactman,
 			'belong_to_user': self.belong_to_user,
