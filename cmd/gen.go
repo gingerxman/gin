@@ -17,7 +17,7 @@ var genCmd = &cobra.Command{
 	
 	Run: func(cmd *cobra.Command, args []string) {
 		// download
-		url := "https://github.com/gingerxman/gin/archive/master.zip"
+		url := "https://hub.fastgit.org/gingerxman/gin/archive/master.zip"
 		target := "./__gin_master.zip"
 		fmt.Println(fmt.Sprintf("[download] Download %s...", url))
 		res, err := http.Get(url)

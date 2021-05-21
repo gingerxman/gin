@@ -220,7 +220,7 @@ class Field(object):
 
 	def __init__(self, scope, field_info):
 		self.scope = scope
-		self.name = field_info['name']
+		self.name = snake2camel(field_info['name'])
 		self.snake_name = self.get_snake_name(self.name)
 		self.var_name = get_var_name(self.name)
 		self.is_name_field = field_info.get('is_name_field', False)
@@ -276,7 +276,7 @@ class Resource(object):
 		#补充完整fields
 		if self.belong_to_user:
 			self.fields.insert(0, Field("resource", {
-				"name": "UserId",
+				"name": "user_id",
 				"type": "int",
 				"is_data_owner_fk": True,
 				"valid_when_update": False,
@@ -289,7 +289,7 @@ class Resource(object):
 			}
 		if self.belong_to_corp:
 			self.fields.insert(0, Field("resource", {
-				"name": "CorpId",
+				"name": "corp_id",
 				"type": "int",
 				"is_data_owner_fk": True,
 				"valid_when_update": False,
@@ -302,7 +302,7 @@ class Resource(object):
 			}
 
 		self.fields.append(Field("resource", {
-			"name": "IsEnabled",
+			"name": "is_enabled",
 			"type": "bool",
 			"default": "true",
 			"valid_when_update": False,
@@ -310,7 +310,7 @@ class Resource(object):
 			"orm_annatation": '`gorm:"index:ownerid_isdelete_isenable"`'
 		}))
 		self.fields.append(Field("resource", {
-			"name": "IsDeleted",
+			"name": "is_deleted",
 			"type": "bool",
 			"default": "false",
 			"valid_when_update": False,
